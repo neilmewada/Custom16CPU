@@ -1,0 +1,151 @@
+digraph CPU16_HW {
+  rankdir=LR;
+  graph [splines=ortho, nodesep="0.35", ranksep="0.55"];
+  node  [shape=record, style=rounded, fontsize=10];
+  edge  [arrowsize=0.6];
+
+  // ================= CPU CORE =================
+  subgraph cluster_core {
+    label="CPU Core";
+    color="#999999";
+
+    // --- Control / Sequencer ---
+    DEC [label="{Decoder|opcode rd rs}"];
+    SEQ [label="{Sequencer|Fetch • Ext • Execute • Write}"];
+    CTRL [label="{Control Signals|
+      mem_rd|mem_wr|rf_we|pc_we|sp_we|
+      alu_op|sel_alu_b|sel_pc|sel_mem_addr|sel_mem_wd|
+      sel_sp_src|ir_ld|ext_ld}"];
+
+    DEC -> CTRL [label="decode"];
+    SEQ -> CTRL [label="microstate"];
+
+    // --- Visible registers ---
+    PC   [label="{PC|16}"];
+    IR   [label="{IR|inst[15:0]}"];
+    EXT  [label="{EXT|imm[15:0]}"];
+    RF   [label="{Register File|r0..r6|SP(r7) (rd/rs ports)}"];
+    FLAGS[label="{Flags|N Z C V}"];
+
+    // --- Datapath blocks ---
+    ALU  [label="{ALU|ADD SUB AND OR XOR NOT SHL SHR MUL CMP}"];
+    MUX_ALUB [label="MUX_B\n{rs / EXT}", shape=trapezium];
+    ADD_PC1  [label="{Adder|PC+1}"];
+    MUX_PC   [label="MUX_PCsrc\n{PC+1 / EXT / MemData}", shape=trapezium];
+
+    // Stack pointer helpers (SP is r7 tap)
+    T_SP      [label="{SP tap|from r7}"];
+    ADD_SP_DEC[label="{Adder|SP-1}"];
+    ADD_SP_INC[label="{Adder|SP+1}"];
+    MUX_SP    [label="MUX_SPsrc\n{SP-1 / SP+1 / SP}", shape=trapezium];
+
+    // Memory interface selection
+    MUX_MA    [label="MUX_MemAddr\n{PC / ALU / SP / (SP-1)}", shape=trapezium];
+    MUX_MWD   [label="MUX_MemWD\n{rs / PC_next}", shape=trapezium]; // PC_next used for CALL push
+    IR -> DEC [label="opcode,rd,rs"];
+  }
+
+  // ================= MEMORY + IO =================
+  subgraph cluster_memio {
+    label="Unified Memory + MMIO (0xFF00..0xFFFF)";
+    color="#999999";
+
+    MEM   [label="{RAM|64K x 16}"];
+    ADE   [label="{Address Decode|addr >= 0xFF00}"];
+
+    subgraph cluster_io {
+      label="MMIO devices";
+      TERM  [label="{Terminal|\n0xFF00 TX_CHAR\n0xFF10 TX_STR_ADDR\n0xFF12 TX_INT}"];
+      TIMER [label="{Timer|0xFF20 cycles}"];
+    }
+  }
+
+  // ================= BUS WIRES (abstract) =================
+  BUS_A [label="Address Bus", shape=plaintext];
+  BUS_D [label="Data Bus",    shape=plaintext];
+
+  // ===== Connections inside Core =====
+  // Fetch path
+  PC    -> ADD_PC1;
+  ADD_PC1 -> MUX_PC  [label="PC+1"];
+  MUX_PC -> PC       [label="PC_next", penwidth=1.3];
+
+  // IR / EXT latches on fetch cycles
+  MEM -> IR  [label="mem_data (ir_ld)"];
+  MEM -> EXT [label="mem_data (ext_ld)"];
+
+  // Register file data paths
+  RF  -> ALU [label="rs -> A"];
+  RF  -> MUX_ALUB [label="rd/rs -> B"];
+  EXT -> MUX_ALUB [label="imm16"];
+  MUX_ALUB -> ALU [label="B"];
+
+  // ALU results & flags
+  ALU -> RF    [label="rd (rf_we)"];
+  ALU -> FLAGS [label="NZCV"];
+
+  // Stack pointer plumbing (SP is r7 in RF)
+  RF  -> T_SP  [label="r7"];
+  T_SP -> ADD_SP_DEC;
+  T_SP -> ADD_SP_INC;
+  ADD_SP_DEC -> MUX_SP;
+  ADD_SP_INC -> MUX_SP;
+  T_SP -> MUX_SP;
+  MUX_SP -> RF [label="write r7 (sp_we)"];
+
+  // Memory address/data selection
+  PC        -> MUX_MA  [label="for fetch"];
+  ALU       -> MUX_MA  [label="for LD/ST"];
+  T_SP      -> MUX_MA  [label="POP addr"];
+  ADD_SP_DEC-> MUX_MA  [label="PUSH addr"];
+
+  // CALL pushes return address: use PC_next
+  MUX_PC -> MUX_MWD    [label="PC_next (CALL)"];
+  RF     -> MUX_MWD    [label="rs (ST)"];
+
+  // ===== Memory & IO bus connections =====
+  // Address path
+  MUX_MA -> BUS_A;
+  BUS_A  -> MEM [label="a"];
+  BUS_A  -> ADE;
+
+  // Data path
+  MEM  -> BUS_D [label="q", dir=both];
+  MUX_MWD -> BUS_D [label="d"];
+  BUS_D -> MEM  [label="d (mem_wr)"];
+
+  // MMIO decode and devices
+  ADE -> TERM;
+  ADE -> TIMER;
+
+  // Reads from MMIO back to bus (abstracted)
+  TERM  -> BUS_D [label="read (e.g., none)"];
+  TIMER -> BUS_D [label="cycles"];
+
+  // ===== CPU consuming bus reads =====
+  BUS_D -> IR   [label="ir_ld"];
+  BUS_D -> EXT  [label="ext_ld"];
+  BUS_D -> RF   [label="LD rd (rf_we)"];
+  BUS_D -> MUX_PC [label="RET -> PCsrc=MemData"];
+
+  // ===== Control influences (not wires) =====
+  CTRL -> MUX_PC    [label="sel_pc"];
+  CTRL -> MUX_ALUB  [label="sel_alu_b"];
+  CTRL -> MUX_MA    [label="sel_mem_addr"];
+  CTRL -> MUX_MWD   [label="sel_mem_wd"];
+  CTRL -> MUX_SP    [label="sel_sp_src"];
+  CTRL -> PC        [label="pc_we"];
+  CTRL -> RF        [label="rf_we"];
+  CTRL -> MEM       [label="mem_rd/mem_wr"];
+  CTRL -> IR        [label="ir_ld"];
+  CTRL -> EXT       [label="ext_ld"];
+
+  // ===== Notes =====
+  note1 [shape=note, label="• Absolute jumps/calls use EXT as target\n• RET pops PC from [SP], CALL pushes PC_next to [SP-1]\n• LD/ST indirect use ALU addr from a register\n• MMIO is address-decoded region 0xFF00..0xFFFF"];
+  note1 -> CTRL [style=dotted, arrowsize=0.5];
+
+  {rank = same; PC; ADD_PC1; MUX_PC;}
+  {rank = same; RF; ALU; MUX_ALUB;}
+  {rank = same; MUX_MA; BUS_A; MEM;}
+  {rank = same; BUS_D; MUX_MWD;}
+}

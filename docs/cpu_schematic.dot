@@ -1,0 +1,25 @@
+
+digraph CPU16 {
+  rankdir=LR;
+  node [shape=record, style=rounded];
+
+  subgraph cluster_cpu {
+    label="CPU (Control Unit + ALU + Registers)";
+    CU [label="{Control Unit|PC|Decoder|Flags}"];
+    ALU [label="{ALU|ADD|SUB|AND|OR|XOR|SHL|SHR|MUL}"];
+    REG [label="{Registers|r0..r6|SP(r7)}"];
+  }
+
+  BUS [label="System Bus", shape=plaintext];
+  MEM [label="{Memory|64K x 16-bit}"];
+  MMIO [label="{MMIO|0xFF00 TX_CHAR|0xFF10 TX_STRING_ADDR|0xFF12 TX_INT|0xFF20 TIMER}"];
+
+  CU -> ALU [label="opcodes"];
+  REG -> ALU [label="operands"];
+  ALU -> REG [label="results"];
+  CU -> REG [label="writeback"];
+  CU -> BUS [label="read/write"];
+  REG -> BUS [label="addr/data"];
+  BUS -> MEM [dir=both, label="load/store"];
+  BUS -> MMIO [dir=both, label="mapped I/O"];
+}
