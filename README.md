@@ -111,14 +111,3 @@ cmake .. && cmake --build . -j
 
 The timer demo shows the **Fetch / Execute / Write** trace lines to illustrate cycles.
 
-## DOT Schematic
-
-See `docs/cpu_schematic.dot`. Render with Graphviz:
-
-```bash
-dot -Tpng docs/cpu_schematic.dot -o cpu_schematic.png
-```
-
----
-
-**Update:** Stack pointer now starts at `0xF000` (below MMIO `0xFF00..0xFFFF`). Earlier `0xFFFE` caused `PUSH/POP/CALL/RET` to touch MMIO instead of RAM, breaking recursion.
