@@ -6,4 +6,4 @@ start:
     HALT
 
 msg:
-    .asciiz "Hello, World!\n"
+    .asciiz "Hello, World!"
