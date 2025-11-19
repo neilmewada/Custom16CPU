@@ -101,11 +101,13 @@ cmake .. && cmake --build . -j
 # Assemble
 ./asm16 ../programs/hello.asm -o hello.bin
 ./asm16 ../programs/factorial.asm -o factorial.bin
+./asm16 ../programs/fibonacci.asm -o fibonacci.bin
 ./asm16 ../programs/timer.asm -o timer.bin
 
 # Run (optionally with --trace to show Fetch/Execute/Write)
 ./emu16 hello.bin
 ./emu16 factorial.bin
+./emu16 fibonacci.bin
 ./emu16 --trace timer.bin
 ```
 
