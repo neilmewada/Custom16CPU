@@ -8,6 +8,7 @@
 #include <string>
 #include <cassert>
 #include <functional>
+#include <stdint.h>
 
 namespace ISA {
     enum Opcode : uint16_t {

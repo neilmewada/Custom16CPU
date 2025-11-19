@@ -9,6 +9,7 @@
 #include <stdexcept>
 #include <iostream>
 #include <algorithm>
+#include <stdint.h>
 
 namespace ISA {
     enum Opcode : uint16_t {
