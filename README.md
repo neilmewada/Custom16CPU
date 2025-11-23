@@ -10,13 +10,23 @@ This project contains a complete 16-bit CPU ISA and emulator:
 - Stack starts at 0xF000 address.
 - **Test programs**: Hello World, Recursive Factorial, and a Timer demo.
 
+## Quick Run Script
+
+You can run the run.sh bash script to quickly build and test the simulator.
+
+```bash
+sh run.sh
+```
+
+The output of memdump of each test program will be stored in the build folder. Check `build/mem_*.txt` files.
+
 ## Build
 
 ```bash
 mkdir -p build
 cd build
 cmake ..
-cmake --build . --config Release
+cmake --build .
 ```
 
 This produces two binaries:
