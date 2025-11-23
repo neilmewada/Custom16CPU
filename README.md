@@ -7,6 +7,7 @@ This project contains a complete 16-bit CPU ISA and emulator:
 - A minimal **two-pass assembler** with labels, numeric literals, and basic directives.
 - 65KiB memory size.
 - The program is loaded at 0x0000 starting address, which can be confirmed in the memory dump!
+- Stack starts at 0xF000 address.
 - **Test programs**: Hello World, Recursive Factorial, and a Timer demo.
 
 ## Build
