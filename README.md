@@ -113,12 +113,12 @@ cmake .. && cmake --build . -j
 ./asm16 ../programs/fibonacci.asm -o fibonacci.bin
 ./asm16 ../programs/timer.asm -o timer.bin
 
-# Run (optionally with --trace to show Fetch/Execute/Write)
+# Run (optionally with --trace to show Fetch/Execute/Write cycles)
 # --memdump mem.txt will output the memory to mem.txt file as HEX with address and value.
 ./emu16 hello.bin --memdump mem.txt
 ./emu16 factorial.bin --memdump mem.txt
 ./emu16 fibonacci.bin --memdump mem.txt
-./emu16 --trace timer.bin # --trace command prints out execution information.
+./emu16 timer.bin
 ```
 
 The timer demo shows the **Fetch / Execute / Write** trace lines to illustrate cycles.
