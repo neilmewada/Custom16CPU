@@ -1,3 +1,39 @@
+/**
+ * 16-bit CPU Assembler (Two-Pass) — Documentation & Comments Only
+ * -----------------------------------------------------------------------------
+ * This source implements a minimal assembler for the custom 16‑bit ISA.
+ *
+ * Features
+ *   • Two-pass assembly (1st pass: collect labels/sizes; 2nd pass: emit code)
+ *   • Labels: `start:` / `loop:` etc.
+ *   • Registers: `r0..r7` with `sp` as an alias for `r7`
+ *   • Numeric literals:
+ *       - Decimal:  123
+ *       - Hex:      0xABCD / 0XABCD
+ *       - Char:     'A' (low 8 bits used)
+ *   • Directives:
+ *       - .org <addr>       : set location counter (word addresses)
+ *       - .word v[, v ...]  : emit one or more 16‑bit words
+ *       - .asciiz "text"    : emit zero-terminated string (1 byte per word)
+ *   • Supported instructions (subset): MOV/ADD/SUB/AND/OR/XOR/NOT/SHL/SHR/CMP,
+ *     PUSH/POP, LD/ST absolute & indirect, LDI/LEA/ADDI/SUBI, JMP/JZ/JNZ/JC/JN,
+ *     CALL/RET/HALT, and MUL. See `ISA::Opcode` for encodings.
+ *
+ * Design notes
+ *   • Word-addressed memory: addresses are in units of 16‑bit words.
+ *   • Instruction lengths: 1 word (register format) or 2 words (immediate/address).
+ *   • First pass computes exact sizes so labels resolve correctly in the second pass.
+ *   • Error handling: throws exceptions with descriptive messages on malformed input.
+ *
+ * Reading guide
+ *   1) [ISA]     — opcode enumeration used by encoder
+ *   2) [Helpers] — trimming, tokenizing, register parsing utilities
+ *   3) [Assembler] class:
+ *        - assemble_file() : entry point (two-pass)
+ *        - first_pass()    : sizes / symbols
+ *        - second_pass()   : emission / encoding helpers (putR/putI/putJ)
+ *        - parse_*()       : literals / labels / immediates
+ */
 
 #pragma once
 #include <string>
@@ -10,6 +46,8 @@
 #include <iostream>
 #include <algorithm>
 #include <stdint.h>
+
+// [ISA] Opcode enumeration for the 16-bit instruction set
 
 namespace ISA
 {
@@ -48,6 +86,8 @@ namespace ISA
     };
 }
 
+// [Helpers] String utilities: trim whitespace from both ends
+
 static inline std::string trim(const std::string &s)
 {
     size_t i = 0, j = s.size();
@@ -57,6 +97,8 @@ static inline std::string trim(const std::string &s)
         j--;
     return s.substr(i, j - i);
 }
+
+// [Helpers] Tokenizer: splits line into tokens, preserving quoted strings
 
 static inline std::vector<std::string> tokenize(const std::string &line)
 {
@@ -95,6 +137,8 @@ static inline std::vector<std::string> tokenize(const std::string &line)
     return out;
 }
 
+// [Helpers] Register parser: accepts r0..r7 and alias "sp"
+
 static inline bool is_register(const std::string &tok)
 {
     if (tok == "sp")
@@ -120,9 +164,13 @@ static inline uint16_t encode_R(uint16_t opc, uint16_t rd, uint16_t rs)
     return (uint16_t)((opc << 11) | ((rd & 7) << 8) | ((rs & 7) << 5));
 }
 
+// [Assembler] Two-pass assembler: see methods for pass breakdown
+
 class Assembler
 {
 public:
+
+    // Entry point: reads file, strips comments, performs two-pass assembly
     std::vector<uint16_t> assemble_file(const std::string &path)
     {
         std::ifstream f(path);
@@ -147,6 +195,8 @@ public:
 private:
     std::unordered_map<std::string, uint16_t> sym;
     uint16_t loc = 0;
+
+        // Pass 1: determine sizes and record label addresses (location counter)
 
     void first_pass(const std::vector<std::string> &lines)
     {
@@ -201,6 +251,8 @@ private:
                 loc += 1;
         }
     }
+
+        // Pass 2: emit words using symbol table; encodes instructions and data
 
     std::vector<uint16_t> second_pass(const std::vector<std::string> &lines)
     {
@@ -415,6 +467,8 @@ private:
         return s;
     }
 
+        // Parse either an immediate literal or resolve a label from the symbol table
+
     uint16_t parse_imm_or_label(const std::string &t)
     {
         if (is_label_name(t))
@@ -426,6 +480,8 @@ private:
         }
         return parse_imm(t);
     }
+
+        // Recognize label-like identifiers (alnum + underscore, not starting with digit)
 
     static inline bool is_label_name(const std::string &t)
     {
@@ -443,6 +499,8 @@ private:
         return true;
     }
 
+        // Parse numeric literal: hex (0x...), char ('A'), or decimal
+
     static inline uint16_t parse_imm(const std::string &t)
     {
         std::string s = t;
@@ -452,6 +510,8 @@ private:
             return (uint16_t)(unsigned char)s[1];
         return (uint16_t)std::stoul(s, nullptr, 10);
     }
+
+        // Decide if an instruction consumes a second word (immediate/address)
 
     bool is_two_word(const std::string &op, const std::vector<std::string> &toks)
     {
