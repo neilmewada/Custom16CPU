@@ -92,6 +92,12 @@ Two-pass assembler with:
   - `.word <val>[, ...]`: emit one or more 16-bit words
   - `.asciiz "text"`: emit bytes (one per word) terminated by zero
 
+## Test Programs
+
+hello.bin: Prints out "Hello, World!" without a newline at the end.<br>
+factorial.bin: Prints the factorial of 5.<br>
+fibonacci.bin: Prints the fibonacci sequence for input 1 to 10.<br>
+
 ## Usage
 
 Assemble a program and run it:
@@ -112,7 +118,7 @@ cmake .. && cmake --build . -j
 ./emu16 hello.bin --memdump mem.txt
 ./emu16 factorial.bin --memdump mem.txt
 ./emu16 fibonacci.bin --memdump mem.txt
-./emu16 --trace timer.bin
+./emu16 --trace timer.bin # --trace command prints out execution information.
 ```
 
 The timer demo shows the **Fetch / Execute / Write** trace lines to illustrate cycles.
