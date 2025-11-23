@@ -1,5 +1,39 @@
-
 #pragma once
+
+/**
+ * 16-bit CPU Emulator Core (Emu16.cpp)
+ * -----------------------------------------------------------------------------
+ * This file implements a tiny educational 16‑bit CPU:
+ *   • 8 general-purpose registers (r0..r7) where r7 is SP (stack pointer)
+ *   • Separate PC and FLAGS (N,Z,C,V)
+ *   • 64K x 16-bit word-addressable memory
+ *   • Memory-mapped I/O (MMIO) at 0xFF00..0xFFFF:
+ *       - 0xFF00: TX_CHAR (write low 8 bits -> prints a character)
+ *       - 0xFF10: TX_STR_ADDR (write address of zero-terminated string)
+ *       - 0xFF12: TX_INT (write 16-bit integer as decimal + newline)
+ *       - 0xFF20: TIMER (read-only, returns cycles & 0xFFFF)
+ *
+ * Conventions
+ *   • Stack grows downward. On reset, SP = 0xF000 (kept below MMIO window).
+ *   • CALL pushes the return address, RET pops it back into PC.
+ *   • All GPRs are caller-saved in sample programs.
+ *
+ * Reading guide
+ *   1) ISA opcodes (enum) .............................................. [ISA]
+ *   2) Flags struct and helpers ...................................... [Flags]
+ *   3) MMIO implementation ............................................ [MMIO]
+ *   4) Memory wrapper (RAM + MMIO) .................................. [Memory]
+ *   5) ALU operations and flag logic ................................... [ALU]
+ *   6) Emu16 CPU core: reset/load/fetch/execute loop .................. [Emu16]
+ *
+ * Tip: enable trace mode in the frontend to print per-instruction state.
+ *      (frontend parses --trace and calls Emu16 with trace=true)
+ *
+ * This file is a formatting + documentation pass over your original.
+ * Logic is preserved; only comments/whitespace were adjusted for clarity.
+ */
+
+
 #include <cstdint>
 #include <vector>
 #include <iostream>
