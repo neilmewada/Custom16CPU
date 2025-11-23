@@ -1,5 +1,5 @@
 
-# Custom 16-bit CPU — ISA, Emulator, Assembler, Tests
+# Custom 16-bit CPU — ISA, Emulator, Assembler
 
 This project contains a complete 16-bit CPU ISA and emulator:
 - A compact **ISA** with recursion support via `CALL`/`RET` and a downward stack on `SP` (`r7`).
