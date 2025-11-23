@@ -5,6 +5,8 @@ This project contains a complete 16-bit CPU ISA and emulator:
 - A compact **ISA** with recursion support via `CALL`/`RET` and a downward stack on `SP` (`r7`).
 - A **C++17 emulator** with ALU, Control Unit, Bus, Memory, and **memory-mapped I/O** (MMIO).
 - A minimal **two-pass assembler** with labels, numeric literals, and basic directives.
+- 65KiB memory size.
+- The program is loaded at 0x0000 starting address, which can be confirmed in the memory dump!
 - **Test programs**: Hello World, Recursive Factorial, and a Timer demo.
 
 ## Build
